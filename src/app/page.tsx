@@ -9,9 +9,9 @@ import {
   Edit3, 
   UploadCloud, 
   Loader2, 
-  Settings,
-  LogOut,
-  Sparkles
+  Sparkles,
+  CloudLightning,
+  ShieldCheck
 } from "lucide-react";
 
 interface Project {
@@ -34,15 +34,21 @@ interface Product {
   isBestSeller?: boolean;
 }
 
+// Pixel-Perfect Inline SVG for GitHub
+const GithubIcon = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+  </svg>
+);
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"products" | "projects">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
-  const [cloudinaryCloudName, setCloudinaryCloudName] = useState("");
-  const [cloudinaryUploadPreset, setCloudinaryUploadPreset] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState("");
 
@@ -62,136 +68,145 @@ export default function AdminDashboard() {
     desc: ""
   });
 
-  // Hydration-safe initial loading
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const prodRes = await fetch("/api/sync?type=products");
+      const prodData = await prodRes.json();
+      if (!prodData.error) setProducts(prodData);
 
-    const cachedProducts = localStorage.getItem("nova_products");
-    const cachedProjects = localStorage.getItem("nova_projects");
-
-    if (cachedProducts) {
-      setProducts(JSON.parse(cachedProducts));
-    } else {
-      const defaults = [
-        { id: 1, slug: "beige-taza-boucharde", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Bouchardé", nameAr: "بيج تازة بوشاردة (مبشور)", nameEn: "Bushhammered Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-bouchard%C3%A9_bstibx.jpg", isBestSeller: true },
-        { id: 101, slug: "beige-taza-poli", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Poli", nameAr: "بيج تازة مصقول", nameEn: "Polished Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-polli_jxmf25.jpg", isBestSeller: true },
-        { id: 103, slug: "beige-taza-vieilli", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Vieilli", nameAr: "بيج تازة معتق", nameEn: "Antiqued Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-vieille_rzmpy8.jpg", isBestSeller: true }
-      ];
-      setProducts(defaults);
-      localStorage.setItem("nova_products", JSON.stringify(defaults));
-    }
-
-    if (cachedProjects) {
-      setProjects(JSON.parse(cachedProjects));
-    } else {
-      const defaults = [
-        { id: 1, category: "EXTÉRIEUR", title: "Façade Résidentielle Moderne", material: "Basalte Volcanique", desc: "Habillage de façade ultra-moderne combinant le basalte noir.", img: "https://i.ibb.co/Q7JdS4cG/Whats-App-Image-2026-05-18-at-23-27-21.jpg" }
-      ];
-      setProjects(defaults);
-      localStorage.setItem("nova_projects", JSON.stringify(defaults));
-    }
-
-    setCloudinaryCloudName(localStorage.getItem("cloudinary_cloud") || "demo");
-    setCloudinaryUploadPreset(localStorage.getItem("cloudinary_preset") || "unsigned_preset");
-    setLoading(false);
-  }, []);
-
-  const updateLocalStorage = (type: "products" | "projects", updatedData: any) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`nova_${type}`, JSON.stringify(updatedData));
+      const projRes = await fetch("/api/sync?type=projects");
+      const projData = await projRes.json();
+      if (!projData.error) setProjects(projData);
+    } catch (error) {
+      console.error("Git load error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Secure Server-Side Upload Caller
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
-      alert("Please configure your Cloudinary credentials in the Settings section below.");
-      return;
-    }
-
     setUploadingImage(true);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", cloudinaryUploadPreset);
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`, {
+      const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed. Verify Cloud Name and Upload Preset.");
+      if (!res.ok) throw new Error("Upload failed. Verify Cloudinary API variables in .env.local");
       
       const data = await res.json();
-      setTempImageUrl(data.secure_url);
+      setTempImageUrl(data.url);
     } catch (err: any) {
-      alert(err.message || "Something went wrong during upload");
+      alert(err.message || "Upload failed. Double check your API Keys.");
     } finally {
       setUploadingImage(false);
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tempImageUrl) {
       alert("Please upload an image first.");
       return;
     }
 
-    if (activeTab === "products") {
-      let updatedProducts = [...products];
-      if (editingItem) {
-        updatedProducts = products.map(p => p.id === editingItem.id ? {
-          ...p,
+    setSaving(true);
+    try {
+      if (activeTab === "products") {
+        let updatedProducts = [...products];
+        const payload = {
           ...productForm,
-          img: tempImageUrl
-        } : p);
-      } else {
-        const newProduct: Product = {
-          id: Date.now(),
-          ...productForm,
-          img: tempImageUrl
+          img: tempImageUrl,
+          slug: productForm.name.toLowerCase().replace(/ /g, "-")
         };
-        updatedProducts.push(newProduct);
-      }
-      setProducts(updatedProducts);
-      updateLocalStorage("products", updatedProducts);
-    } else {
-      let updatedProjects = [...projects];
-      if (editingItem) {
-        updatedProjects = projects.map(p => p.id === editingItem.id ? {
-          ...p,
-          ...projectForm,
-          img: tempImageUrl
-        } : p);
-      } else {
-        const newProject: Project = {
-          id: Date.now(),
-          ...projectForm,
-          img: tempImageUrl
-        };
-        updatedProjects.push(newProject);
-      }
-      setProjects(updatedProjects);
-      updateLocalStorage("projects", updatedProjects);
-    }
 
-    resetForm();
+        if (editingItem) {
+          updatedProducts = products.map(p => p.id === editingItem.id ? { ...p, ...payload } : p);
+        } else {
+          updatedProducts.push({
+            id: Date.now(),
+            ...payload
+          });
+        }
+
+        const res = await fetch("/api/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "products", data: updatedProducts })
+        });
+
+        if (!res.ok) throw new Error();
+        setProducts(updatedProducts);
+      } else {
+        let updatedProjects = [...projects];
+        const payload = { ...projectForm, img: tempImageUrl };
+
+        if (editingItem) {
+          updatedProjects = projects.map(p => p.id === editingItem.id ? { ...p, ...payload } : p);
+        } else {
+          updatedProjects.push({
+            id: Date.now(),
+            ...payload
+          });
+        }
+
+        const res = await fetch("/api/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "projects", data: updatedProjects })
+        });
+
+        if (!res.ok) throw new Error();
+        setProjects(updatedProjects);
+      }
+      resetForm();
+    } catch (error) {
+      alert("GitHub sync failed. Check GITHUB_TOKEN permissions.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id: string | number) => {
-    if (!confirm("Are you sure you want to delete this item?")) return;
+  const handleDelete = async (id: string | number) => {
+    if (!confirm("Are you sure you want to delete this live resource? This will write a git commit.")) return;
     
-    if (activeTab === "products") {
-      const filtered = products.filter(p => p.id !== id);
-      setProducts(filtered);
-      updateLocalStorage("products", filtered);
-    } else {
-      const filtered = projects.filter(p => p.id !== id);
-      setProjects(filtered);
-      updateLocalStorage("projects", filtered);
+    setSaving(true);
+    try {
+      if (activeTab === "products") {
+        const updatedProducts = products.filter(p => p.id !== id);
+        const res = await fetch("/api/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "products", data: updatedProducts })
+        });
+        if (!res.ok) throw new Error();
+        setProducts(updatedProducts);
+      } else {
+        const updatedProjects = projects.filter(p => p.id !== id);
+        const res = await fetch("/api/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "projects", data: updatedProjects })
+        });
+        if (!res.ok) throw new Error();
+        setProjects(updatedProjects);
+      }
+    } catch (error) {
+      alert("GitHub Sync deletion failed.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -229,6 +244,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0A0B0D]">
       
+      {/* SIDEBAR */}
       <aside className="w-full lg:w-72 bg-[#111317] border-b lg:border-b-0 lg:border-r border-[#1B1E24] p-8 flex flex-col justify-between shrink-0">
         <div>
           <div className="relative p-4 rounded-xl border border-[#1B1E24] bg-black/20 mb-8 overflow-hidden">
@@ -247,6 +263,7 @@ export default function AdminDashboard() {
           
           <nav className="space-y-1.5">
             <button 
+              disabled={saving}
               onClick={() => { setActiveTab("products"); resetForm(); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === "products" ? "bg-[#C5A028] text-[#0A0B0D] shadow-lg" : "text-gray-400 hover:bg-[#1B1E24] hover:text-white"}`}
             >
@@ -260,6 +277,7 @@ export default function AdminDashboard() {
             </button>
             
             <button 
+              disabled={saving}
               onClick={() => { setActiveTab("projects"); resetForm(); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${activeTab === "projects" ? "bg-[#C5A028] text-[#0A0B0D] shadow-lg" : "text-gray-400 hover:bg-[#1B1E24] hover:text-white"}`}
             >
@@ -277,18 +295,19 @@ export default function AdminDashboard() {
         <div className="mt-8 pt-6 border-t border-[#1B1E24] space-y-4">
           <div className="flex items-center justify-between text-[11px] text-gray-400 bg-black/25 p-3 rounded-lg border border-[#1B1E24]">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Database Engine</span>
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span>Git Engine</span>
             </div>
-            <strong className="text-[#C5A028] font-bold">Firestore</strong>
+            <strong className="text-[#C5A028] font-bold">GitHub REST</strong>
           </div>
           
           <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#1B1E24] hover:bg-red-950/20 hover:text-red-400 transition duration-300 text-xs text-gray-400 font-medium">
-            <LogOut size={13} /> Sign Out
+            Log Out
           </button>
         </div>
       </aside>
 
+      {/* DASHBOARD */}
       <main className="flex-1 p-6 md:p-12">
         
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-6 mb-12 pb-6 border-b border-[#1B1E24]/60">
@@ -298,10 +317,11 @@ export default function AdminDashboard() {
               <span className="text-[10px] uppercase tracking-widest font-semibold">Prestige Studio</span>
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-white capitalize">{activeTab} Manager</h2>
-            <p className="text-xs text-gray-400 mt-1">Easily update, translate, and upload items to your multilingual site.</p>
+            <p className="text-xs text-gray-400 mt-1">Secure server-side Cloudinary and GitHub sync integration.</p>
           </div>
           
           <button 
+            disabled={saving}
             onClick={() => { resetForm(); setIsModalOpen(true); }}
             className="flex items-center justify-center gap-2 bg-[#C5A028] hover:bg-[#D4AF37] text-black font-semibold px-6 py-3 rounded-xl transition duration-300 text-xs uppercase tracking-wider shadow-xl shrink-0"
           >
@@ -309,6 +329,13 @@ export default function AdminDashboard() {
             Ajouter {activeTab === "products" ? "Produit" : "Projet"}
           </button>
         </header>
+
+        {saving && (
+          <div className="mb-6 p-4 rounded-xl bg-blue-950/10 border border-blue-900/30 text-blue-400 text-xs flex items-center gap-2.5">
+            <Loader2 className="animate-spin" size={14} />
+            Commiting modifications directly to GitHub and initiating automated deploy pipelines...
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
@@ -349,14 +376,16 @@ export default function AdminDashboard() {
                   
                   <div className="flex gap-2.5 mt-6 pt-4 border-t border-[#1B1E24]">
                     <button 
+                      disabled={saving}
                       onClick={() => startEdit(product)}
-                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-[#1B1E24] hover:bg-[#262B34] text-gray-200 rounded-xl transition duration-300"
+                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-[#1B1E24] hover:bg-[#262B34] text-gray-200 rounded-xl transition duration-300 disabled:opacity-50"
                     >
                       <Edit3 size={13} /> Edit
                     </button>
                     <button 
+                      disabled={saving}
                       onClick={() => handleDelete(product.id)}
-                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-red-950/20 hover:bg-red-900/30 text-red-400 rounded-xl transition duration-300 border border-red-900/20"
+                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-red-950/20 hover:bg-red-900/30 text-red-400 rounded-xl transition duration-300 border border-red-900/20 disabled:opacity-50"
                     >
                       <Trash2 size={13} /> Delete
                     </button>
@@ -383,14 +412,16 @@ export default function AdminDashboard() {
                   
                   <div className="flex gap-2.5 mt-6 pt-4 border-t border-[#1B1E24]">
                     <button 
+                      disabled={saving}
                       onClick={() => startEdit(project)}
-                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-[#1B1E24] hover:bg-[#262B34] text-gray-200 rounded-xl transition duration-300"
+                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-[#1B1E24] hover:bg-[#262B34] text-gray-200 rounded-xl transition duration-300 disabled:opacity-50"
                     >
                       <Edit3 size={13} /> Edit
                     </button>
                     <button 
+                      disabled={saving}
                       onClick={() => handleDelete(project.id)}
-                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-red-950/20 hover:bg-red-900/30 text-red-400 rounded-xl transition duration-300 border border-red-900/20"
+                      className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider py-2.5 bg-red-950/20 hover:bg-red-900/30 text-red-400 rounded-xl transition duration-300 border border-red-900/20 disabled:opacity-50"
                     >
                       <Trash2 size={13} /> Delete
                     </button>
@@ -402,41 +433,32 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* SECURITY & DEPLOYMENT SPECS */}
         <section className="mt-20 bg-[#111317] border border-[#1B1E24] rounded-2xl p-8 relative overflow-hidden">
-          <div className="flex items-center gap-3.5 mb-5">
-            <Settings className="text-[#C5A028]" size={22} />
-            <h3 className="text-xl font-bold text-white tracking-wide">Image Delivery Integration</h3>
+          <div className="flex items-center gap-3.5 mb-4">
+            <GithubIcon className="text-[#C5A028] w-5 h-5" />
+            <h3 className="text-xl font-bold text-white tracking-wide">GitOps Sync Engine Status</h3>
           </div>
-          <p className="text-xs text-gray-400 max-w-xl mb-8 leading-relaxed">
-            All photos are directly processed and optimized via Cloudinary's dynamic global delivery network. Provide your credentials below.
+          <p className="text-xs text-gray-400 max-w-xl mb-6 leading-relaxed">
+            Your credentials are secure. Committing updates triggers automated pipelines.
           </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-            <div>
-              <label className="block text-[10px] text-gray-400 mb-2 font-bold uppercase tracking-wider">Cloudinary Cloud Name</label>
-              <input 
-                type="text" 
-                value={cloudinaryCloudName} 
-                onChange={(e) => { setCloudinaryCloudName(e.target.value); localStorage.setItem("cloudinary_cloud", e.target.value); }}
-                className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028]/80 transition duration-300"
-                placeholder="e.g. dxyz123"
-              />
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#1B1E24] border border-[#262B34] rounded-xl text-xs">
+              <CloudLightning className="text-[#C5A028]" size={14} />
+              <span className="text-gray-300">Cloudinary API:</span>
+              <strong className="text-emerald-500">Active (Secure Server-Signed)</strong>
             </div>
-            <div>
-              <label className="block text-[10px] text-gray-400 mb-2 font-bold uppercase tracking-wider">Upload Preset (Unsigned)</label>
-              <input 
-                type="text" 
-                value={cloudinaryUploadPreset} 
-                onChange={(e) => { setCloudinaryUploadPreset(e.target.value); localStorage.setItem("cloudinary_preset", e.target.value); }}
-                className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028]/80 transition duration-300"
-                placeholder="e.g. ml_default"
-              />
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#1B1E24] border border-[#262B34] rounded-xl text-xs">
+              <ShieldCheck className="text-[#C5A028]" size={14} />
+              <span className="text-gray-300">Repository Sync:</span>
+              <strong className="text-emerald-500">Active (GitHub REST)</strong>
             </div>
           </div>
         </section>
 
       </main>
 
+      {/* FORM MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
           <div className="bg-[#111317] border border-[#1B1E24] w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl">
