@@ -468,18 +468,21 @@ export default function AdminDashboard() {
 
       </main>
 
-      {/* FORM MODAL */}
+      {/* FORM MODAL WITH STICKY LAYOUTS AND INTERNAL SCROLLING */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111317] border border-[#1B1E24] w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-[#1B1E24] flex justify-between items-center">
+          <div className="bg-[#111317] border border-[#1B1E24] w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+            
+            {/* STICKY HEADER */}
+            <div className="p-6 border-b border-[#1B1E24] flex justify-between items-center shrink-0 bg-[#111317]">
               <h3 className="font-bold text-lg text-white uppercase tracking-wider">
                 {editingItem ? "Modifier" : "Ajouter"} {activeTab === "products" ? "un Produit" : "un Projet"}
               </h3>
               <button onClick={resetForm} className="text-xs font-semibold tracking-wider text-gray-400 hover:text-white transition uppercase">Close</button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-5">
+            {/* SCROLLABLE INNER CONTAINER (Form Body) */}
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-5">
               
               <div>
                 <label className="block text-[10px] text-gray-400 mb-2.5 font-bold uppercase tracking-wider">Image / Rendu (Cloudinary)</label>
@@ -567,7 +570,6 @@ export default function AdminDashboard() {
                       />
                     </div>
                     
-                    {/* NEW: Multilingual Description Textareas */}
                     <div className="border-t border-[#1B1E24] pt-4 space-y-4">
                       <div>
                         <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Description (Français)</label>
@@ -670,7 +672,8 @@ export default function AdminDashboard() {
                 </>
               )}
 
-              <div className="flex gap-3 pt-6 border-t border-[#1B1E24]">
+              {/* STICKY FOOTER (Inside Form to allow natural HTML submit) */}
+              <div className="pt-6 border-t border-[#1B1E24] flex gap-3 shrink-0 bg-[#111317] mt-5">
                 <button 
                   type="button" 
                   onClick={resetForm}
@@ -685,6 +688,7 @@ export default function AdminDashboard() {
                   Enregistrer
                 </button>
               </div>
+
             </form>
           </div>
         </div>
