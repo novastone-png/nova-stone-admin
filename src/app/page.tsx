@@ -62,7 +62,10 @@ export default function AdminDashboard() {
     desc: ""
   });
 
+  // Hydration-safe initial loading
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const cachedProducts = localStorage.getItem("nova_products");
     const cachedProjects = localStorage.getItem("nova_projects");
 
@@ -71,7 +74,8 @@ export default function AdminDashboard() {
     } else {
       const defaults = [
         { id: 1, slug: "beige-taza-boucharde", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Bouchardé", nameAr: "بيج تازة بوشاردة (مبشور)", nameEn: "Bushhammered Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-bouchard%C3%A9_bstibx.jpg", isBestSeller: true },
-        { id: 101, slug: "beige-taza-poli", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Poli", nameAr: "بيج تازة مصقول", nameEn: "Polished Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-polli_jxmf25.jpg", isBestSeller: true }
+        { id: 101, slug: "beige-taza-poli", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Poli", nameAr: "بيج تازة مصقول", nameEn: "Polished Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-polli_jxmf25.jpg", isBestSeller: true },
+        { id: 103, slug: "beige-taza-vieilli", category: "PIERRE NATURELLE & TAHEJART", name: "Beige Taza Vieilli", nameAr: "بيج تازة معتق", nameEn: "Antiqued Beige Taza", img: "https://res.cloudinary.com/dtlec1rtt/image/upload/v1779597566/Beige-taza-vieille_rzmpy8.jpg", isBestSeller: true }
       ];
       setProducts(defaults);
       localStorage.setItem("nova_products", JSON.stringify(defaults));
@@ -81,7 +85,7 @@ export default function AdminDashboard() {
       setProjects(JSON.parse(cachedProjects));
     } else {
       const defaults = [
-        { id: 1, category: "EXTÉRIEUR", title: "Façade Résidentielle Moderne", material: "Basalte Volcanique", desc: "Habillage de façade ultra-moderne combinant le basalte noir et des finitions en pierre beige.", img: "https://i.ibb.co/Q7JdS4cG/Whats-App-Image-2026-05-18-at-23-27-21.jpg" }
+        { id: 1, category: "EXTÉRIEUR", title: "Façade Résidentielle Moderne", material: "Basalte Volcanique", desc: "Habillage de façade ultra-moderne combinant le basalte noir.", img: "https://i.ibb.co/Q7JdS4cG/Whats-App-Image-2026-05-18-at-23-27-21.jpg" }
       ];
       setProjects(defaults);
       localStorage.setItem("nova_projects", JSON.stringify(defaults));
@@ -93,7 +97,9 @@ export default function AdminDashboard() {
   }, []);
 
   const updateLocalStorage = (type: "products" | "projects", updatedData: any) => {
-    localStorage.setItem(`nova_${type}`, JSON.stringify(updatedData));
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`nova_${type}`, JSON.stringify(updatedData));
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +107,7 @@ export default function AdminDashboard() {
     if (!file) return;
 
     if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
-      alert("Please enter Cloud Name and Preset under Cloudinary Settings below first.");
+      alert("Please configure your Cloudinary credentials in the Settings section below.");
       return;
     }
 
@@ -116,7 +122,7 @@ export default function AdminDashboard() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed. Verify Cloud Name and Unsigned Preset.");
+      if (!res.ok) throw new Error("Upload failed. Verify Cloud Name and Upload Preset.");
       
       const data = await res.json();
       setTempImageUrl(data.secure_url);
@@ -225,7 +231,7 @@ export default function AdminDashboard() {
       
       <aside className="w-full lg:w-72 bg-[#111317] border-b lg:border-b-0 lg:border-r border-[#1B1E24] p-8 flex flex-col justify-between shrink-0">
         <div>
-          <div className="relative p-4 rounded-xl border border-[#1B1E24] bg-black/20 mb-8 overflow-hidden group">
+          <div className="relative p-4 rounded-xl border border-[#1B1E24] bg-black/20 mb-8 overflow-hidden">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#E5C158] to-[#C5A028] flex items-center justify-center text-[#0A0B0D] font-bold text-lg shadow-lg">
                 NS
