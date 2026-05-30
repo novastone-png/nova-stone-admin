@@ -30,11 +30,13 @@ interface Product {
   name: string;
   nameAr: string;
   nameEn: string;
+  desc?: string;
+  descAr?: string;
+  descEn?: string;
   img: string;
   isBestSeller?: boolean;
 }
 
-// Pixel-Perfect Inline SVG for GitHub
 const GithubIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
@@ -56,6 +58,9 @@ export default function AdminDashboard() {
     name: "",
     nameAr: "",
     nameEn: "",
+    desc: "",
+    descAr: "",
+    descEn: "",
     category: "PIERRE NATURELLE & TAHEJART",
     slug: "",
     isBestSeller: false
@@ -89,7 +94,6 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // Secure Server-Side Upload Caller
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -104,12 +108,12 @@ export default function AdminDashboard() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed. Verify Cloudinary API variables in .env.local");
+      if (!res.ok) throw new Error("Upload failed. Verify Cloudinary API variables in Vercel.");
       
       const data = await res.json();
       setTempImageUrl(data.url);
     } catch (err: any) {
-      alert(err.message || "Upload failed. Double check your API Keys.");
+      alert(err.message || "Upload failed.");
     } finally {
       setUploadingImage(false);
     }
@@ -173,14 +177,14 @@ export default function AdminDashboard() {
       }
       resetForm();
     } catch (error) {
-      alert("GitHub sync failed. Check GITHUB_TOKEN permissions.");
+      alert("GitHub sync failed. Check your GITHUB_TOKEN on Vercel.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string | number) => {
-    if (!confirm("Are you sure you want to delete this live resource? This will write a git commit.")) return;
+    if (!confirm("Are you sure? This will push a git commit.")) return;
     
     setSaving(true);
     try {
@@ -218,6 +222,9 @@ export default function AdminDashboard() {
         name: item.name,
         nameAr: item.nameAr || "",
         nameEn: item.nameEn || "",
+        desc: item.desc || "",
+        descAr: item.descAr || "",
+        descEn: item.descEn || "",
         category: item.category,
         slug: item.slug,
         isBestSeller: item.isBestSeller || false
@@ -236,7 +243,7 @@ export default function AdminDashboard() {
   const resetForm = () => {
     setEditingItem(null);
     setTempImageUrl("");
-    setProductForm({ name: "", nameAr: "", nameEn: "", category: "PIERRE NATURELLE & TAHEJART", slug: "", isBestSeller: false });
+    setProductForm({ name: "", nameAr: "", nameEn: "", desc: "", descAr: "", descEn: "", category: "PIERRE NATURELLE & TAHEJART", slug: "", isBestSeller: false });
     setProjectForm({ title: "", material: "", category: "EXTÉRIEUR", desc: "" });
     setIsModalOpen(false);
   };
@@ -307,7 +314,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* DASHBOARD */}
+      {/* WORKSPACE */}
       <main className="flex-1 p-6 md:p-12">
         
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-6 mb-12 pb-6 border-b border-[#1B1E24]/60">
@@ -317,7 +324,7 @@ export default function AdminDashboard() {
               <span className="text-[10px] uppercase tracking-widest font-semibold">Prestige Studio</span>
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-white capitalize">{activeTab} Manager</h2>
-            <p className="text-xs text-gray-400 mt-1">Secure server-side Cloudinary and GitHub sync integration.</p>
+            <p className="text-xs text-gray-400 mt-1">Direct GitHub synchronization. Commits will auto-deploy the live site.</p>
           </div>
           
           <button 
@@ -361,6 +368,9 @@ export default function AdminDashboard() {
                 <div className="p-6 flex-1 flex flex-col justify-between">
                   <div>
                     <h3 className="font-bold text-lg text-white group-hover:text-[#E5C158] transition duration-300">{product.name}</h3>
+                    {product.desc && (
+                      <p className="text-xs text-gray-400 line-clamp-2 mt-2 leading-relaxed">{product.desc}</p>
+                    )}
                     
                     <div className="space-y-2 mt-4 pt-4 border-t border-[#1B1E24] text-xs">
                       <div className="flex items-center justify-between py-1 bg-black/20 px-3 rounded-lg border border-[#1B1E24]/50">
@@ -556,6 +566,42 @@ export default function AdminDashboard() {
                         placeholder="e.g. Bushhammered Beige Taza"
                       />
                     </div>
+                    
+                    {/* NEW: Multilingual Description Textareas */}
+                    <div className="border-t border-[#1B1E24] pt-4 space-y-4">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Description (Français)</label>
+                        <textarea 
+                          value={productForm.desc} 
+                          onChange={(e) => setProductForm({...productForm, desc: e.target.value})}
+                          rows={2}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 resize-none leading-relaxed"
+                          placeholder="Description du produit en français..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Description (العربية)</label>
+                        <textarea 
+                          dir="rtl"
+                          value={productForm.descAr} 
+                          onChange={(e) => setProductForm({...productForm, descAr: e.target.value})}
+                          rows={2}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 resize-none leading-relaxed text-right"
+                          placeholder="وصف المنتج باللغة العربية..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Description (English)</label>
+                        <textarea 
+                          value={productForm.descEn} 
+                          onChange={(e) => setProductForm({...productForm, descEn: e.target.value})}
+                          rows={2}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 resize-none leading-relaxed"
+                          placeholder="Product description in English..."
+                        />
+                      </div>
+                    </div>
+
                   </div>
 
                   <div className="flex items-center gap-3 pt-2">

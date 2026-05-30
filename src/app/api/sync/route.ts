@@ -105,6 +105,9 @@ export interface Product {
   name: string;
   nameAr: string;
   nameEn: string;
+  desc?: string;
+  descAr?: string;
+  descEn?: string;
   img: string;
   isBestSeller?: boolean;
   variants?: ProductVariant[];
