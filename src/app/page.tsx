@@ -11,7 +11,8 @@ import {
   Loader2, 
   Sparkles,
   CloudLightning,
-  ShieldCheck
+  ShieldCheck,
+  Lock
 } from "lucide-react";
 
 interface Project {
@@ -44,6 +45,11 @@ const GithubIcon = ({ className = "w-4 h-4" }) => (
 );
 
 export default function AdminDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState("");
+
   const [activeTab, setActiveTab] = useState<"products" | "projects">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -73,6 +79,45 @@ export default function AdminDashboard() {
     desc: ""
   });
 
+  // Verify active session locally
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const session = sessionStorage.getItem("nova_admin_auth");
+      if (session === "true") {
+        setIsAuthenticated(true);
+      }
+    }
+    setAuthLoading(false);
+  }, []);
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passwordInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        sessionStorage.setItem("nova_admin_auth", "true");
+        setIsAuthenticated(true);
+        fetchData();
+      } else {
+        setAuthError(data.error || "Incorrect Passcode");
+      }
+    } catch {
+      setAuthError("Failed to connect to authentication server");
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("nova_admin_auth");
+    setIsAuthenticated(false);
+    setPasswordInput("");
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -91,8 +136,10 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -248,6 +295,60 @@ export default function AdminDashboard() {
     setIsModalOpen(false);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#C5A028]" size={36} />
+      </div>
+    );
+  }
+
+  // RENDER LUXURY LOGIN SCREEN
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Decorative Golden Ambient Glows */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#C5A028]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#C5A028]/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="bg-[#111317] border border-[#1B1E24] w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-8 relative">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E5C158] to-[#C5A028] flex items-center justify-center text-[#0A0B0D] font-bold text-xl shadow-lg shadow-[#C5A028]/10 mb-4">
+              <Lock size={20} />
+            </div>
+            <h1 className="font-bold text-xl text-white tracking-widest uppercase">Nova Stone</h1>
+            <span className="text-[10px] text-[#C5A028] font-bold uppercase tracking-wider block mt-1">Espace Administratif</span>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="space-y-5">
+            <div>
+              <label className="block text-[10px] text-gray-400 mb-2 font-bold uppercase tracking-wider">Passcode d'accès</label>
+              <input 
+                type="password" 
+                required
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] text-center tracking-widest font-bold transition duration-300"
+                placeholder="••••••••"
+              />
+              {authError && (
+                <p className="text-[11px] text-red-500 font-semibold text-center mt-2.5">{authError}</p>
+              )}
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-[#C5A028] hover:bg-[#D4AF37] text-black font-bold text-xs uppercase tracking-widest transition duration-300 shadow-lg shadow-[#C5A028]/5"
+            >
+              Déverrouiller
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // RENDER MAIN DASHBOARD SYSTEM
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0A0B0D]">
       
@@ -308,13 +409,16 @@ export default function AdminDashboard() {
             <strong className="text-[#C5A028] font-bold">GitHub REST</strong>
           </div>
           
-          <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#1B1E24] hover:bg-red-950/20 hover:text-red-400 transition duration-300 text-xs text-gray-400 font-medium">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#1B1E24] hover:bg-red-950/20 hover:text-red-400 transition duration-300 text-xs text-gray-400 font-medium"
+          >
             Log Out
           </button>
         </div>
       </aside>
 
-      {/* WORKSPACE */}
+      {/* DASHBOARD SYSTEM */}
       <main className="flex-1 p-6 md:p-12">
         
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-6 mb-12 pb-6 border-b border-[#1B1E24]/60">
@@ -446,7 +550,7 @@ export default function AdminDashboard() {
         {/* SECURITY & DEPLOYMENT SPECS */}
         <section className="mt-20 bg-[#111317] border border-[#1B1E24] rounded-2xl p-8 relative overflow-hidden">
           <div className="flex items-center gap-3.5 mb-4">
-            <GithubIcon className="text-[#C5A028] w-5 h-5" />
+            <ShieldCheck className="text-[#C5A028] w-5 h-5" />
             <h3 className="text-xl font-bold text-white tracking-wide">GitOps Sync Engine Status</h3>
           </div>
           <p className="text-xs text-gray-400 max-w-xl mb-6 leading-relaxed">
@@ -672,7 +776,7 @@ export default function AdminDashboard() {
                 </>
               )}
 
-              {/* STICKY FOOTER (Inside Form to allow natural HTML submit) */}
+              {/* STICKY FOOTER */}
               <div className="pt-6 border-t border-[#1B1E24] flex gap-3 shrink-0 bg-[#111317] mt-5">
                 <button 
                   type="button" 
