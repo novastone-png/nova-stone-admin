@@ -19,8 +19,14 @@ interface Project {
   id: string | number;
   category: string;
   title: string;
+  titleAr?: string;
+  titleEn?: string;
   material: string;
+  materialAr?: string;
+  materialEn?: string;
   desc: string;
+  descAr?: string;
+  descEn?: string;
   img: string;
 }
 
@@ -74,9 +80,15 @@ export default function AdminDashboard() {
 
   const [projectForm, setProjectForm] = useState({
     title: "",
+    titleAr: "",
+    titleEn: "",
     material: "",
+    materialAr: "",
+    materialEn: "",
     category: "EXTÉRIEUR",
-    desc: ""
+    desc: "",
+    descAr: "",
+    descEn: ""
   });
 
   // Verify active session locally
@@ -279,9 +291,15 @@ export default function AdminDashboard() {
     } else {
       setProjectForm({
         title: item.title,
+        titleAr: item.titleAr || "",
+        titleEn: item.titleEn || "",
         material: item.material,
+        materialAr: item.materialAr || "",
+        materialEn: item.materialEn || "",
         category: item.category,
-        desc: item.desc
+        desc: item.desc,
+        descAr: item.descAr || "",
+        descEn: item.descEn || ""
       });
     }
     setIsModalOpen(true);
@@ -291,7 +309,7 @@ export default function AdminDashboard() {
     setEditingItem(null);
     setTempImageUrl("");
     setProductForm({ name: "", nameAr: "", nameEn: "", desc: "", descAr: "", descEn: "", category: "PIERRE NATURELLE & TAHEJART", slug: "", isBestSeller: false });
-    setProjectForm({ title: "", material: "", category: "EXTÉRIEUR", desc: "" });
+    setProjectForm({ title: "", titleAr: "", titleEn: "", material: "", materialAr: "", materialEn: "", category: "EXTÉRIEUR", desc: "", descAr: "", descEn: "" });
     setIsModalOpen(false);
   };
 
@@ -723,28 +741,107 @@ export default function AdminDashboard() {
                 </>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Titre du Projet</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={projectForm.title} 
-                        onChange={(e) => setProjectForm({...projectForm, title: e.target.value})}
-                        className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300"
-                        placeholder="e.g. Villa Royale"
-                      />
+                  <div className="space-y-4">
+                    {/* عناوين المشروع باللغات الثلاث */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Titre du Projet (FR)</label>
+                        <input 
+                          type="text" required
+                          value={projectForm.title} 
+                          onChange={(e) => setProjectForm({...projectForm, title: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300"
+                          placeholder="e.g. Villa Royale"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider text-right">عنوان المشروع (AR)</label>
+                        <input 
+                          type="text" required dir="rtl"
+                          value={projectForm.titleAr} 
+                          onChange={(e) => setProjectForm({...projectForm, titleAr: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 text-right font-medium"
+                          placeholder="مثال: فيلا ملكية"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Project Title (EN)</label>
+                        <input 
+                          type="text" required
+                          value={projectForm.titleEn} 
+                          onChange={(e) => setProjectForm({...projectForm, titleEn: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300"
+                          placeholder="e.g. Royal Villa"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Matériaux Utilisés</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={projectForm.material} 
-                        onChange={(e) => setProjectForm({...projectForm, material: e.target.value})}
-                        className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300"
-                        placeholder="e.g. Travertin Classique"
-                      />
+
+                    {/* نوع المواد باللغات الثلاث */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Matériaux Utilisés (FR)</label>
+                        <input 
+                          type="text" required
+                          value={projectForm.material} 
+                          onChange={(e) => setProjectForm({...projectForm, material: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300"
+                          placeholder="e.g. Travertin Classique"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider text-right">المواد المستخدمة (AR)</label>
+                        <input 
+                          type="text" required dir="rtl"
+                          value={projectForm.materialAr} 
+                          onChange={(e) => setProjectForm({...projectForm, materialAr: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 text-right font-medium"
+                          placeholder="مثال: ترافرتين كلاسيكي"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Materials Used (EN)</label>
+                        <input 
+                          type="text" required
+                          value={projectForm.materialEn} 
+                          onChange={(e) => setProjectForm({...projectForm, materialEn: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300"
+                          placeholder="e.g. Classic Travertine"
+                        />
+                      </div>
+                    </div>
+
+                    {/* الأوصاف باللغات الثلاث */}
+                    <div className="space-y-4 pt-4 border-t border-[#1B1E24]">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Description (FR)</label>
+                        <textarea 
+                          required rows={2}
+                          value={projectForm.desc} 
+                          onChange={(e) => setProjectForm({...projectForm, desc: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 resize-none leading-relaxed"
+                          placeholder="Description du projet en français..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider text-right">وصف التفاصيل (AR)</label>
+                        <textarea 
+                          required rows={2} dir="rtl"
+                          value={projectForm.descAr} 
+                          onChange={(e) => setProjectForm({...projectForm, descAr: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 resize-none leading-relaxed text-right font-medium"
+                          placeholder="تفاصيل تركيب الرخام والعمل باللغة العربية..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1.5 font-bold uppercase tracking-wider">Description (EN)</label>
+                        <textarea 
+                          required rows={2}
+                          value={projectForm.descEn} 
+                          onChange={(e) => setProjectForm({...projectForm, descEn: e.target.value})}
+                          className="w-full bg-[#1B1E24] border border-[#21242A] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#C5A028] transition duration-300 resize-none leading-relaxed"
+                          placeholder="Project details in English..."
+                        />
+                      </div>
                     </div>
                   </div>
 
