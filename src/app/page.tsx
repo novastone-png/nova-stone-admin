@@ -759,6 +759,11 @@ export default function AdminDashboard() {
                       <option value="INTÉRIEURS">INTÉRIEURS</option>
                       <option value="SALLES DE BAIN">SALLES DE BAIN</option>
                       <option value="PISCINES">PISCINES</option>
+                      <option value="CHEMINÉES">CHEMINÉES</option>
+                      <option value="ESCALIERS">ESCALIERS</option>
+                      <option value="CASCADES">CASCADES</option>
+                      <option value="PORTES">PORTES</option>
+                      <option value="CLÔTURES">CLÔTURES</option>
                     </select>
                   </div>
 
