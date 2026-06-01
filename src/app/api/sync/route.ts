@@ -120,8 +120,14 @@ export const allProducts: Product[] = ${JSON.stringify(data, null, 2)};
   id: number;
   category: string;
   title: string;
+  titleAr?: string;
+  titleEn?: string;
   material: string;
+  materialAr?: string;
+  materialEn?: string;
   desc: string;
+  descAr?: string;
+  descEn?: string;
   img: string;
 }
 
