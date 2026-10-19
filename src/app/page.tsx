@@ -84,6 +84,38 @@ interface Product {
   isBestSeller?: boolean;
 }
 
+// Phone photos are often several MB, more than the server's request body limit allows.
+// Resize and re-encode in the browser so uploads stay small (the server converts to WebP anyway).
+const MAX_IMAGE_DIMENSION = 2400;
+const TARGET_UPLOAD_BYTES = 900 * 1024;
+
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+
+  const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  let blob: Blob | null = null;
+  for (const quality of [0.85, 0.75, 0.65, 0.55]) {
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (blob && blob.size <= TARGET_UPLOAD_BYTES) break;
+  }
+
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+}
+
 const GithubIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
@@ -207,17 +239,22 @@ export default function AdminDashboard() {
     if (!file) return;
 
     setUploadingImage(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
+      const formData = new FormData();
+      formData.append("file", await compressImage(file));
+
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed.");
-      
+      if (res.status === 413) throw new Error("Image trop lourde pour le serveur.");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Upload failed (${res.status}).`);
+      }
+
       const data = await res.json();
       setTempImageUrl(data.url);
     } catch (err: any) {
